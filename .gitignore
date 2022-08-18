@@ -156,7 +156,4 @@ dmypy.json
 
 # My
 
-/static
-/data
-
-compute/settings_local.py
+tmp
