@@ -35,7 +35,7 @@ if __name__=='__main__':
     for i in range(10):
         file = testfolder / ("image"+str(i)+'.png')
         copy(file, tmpfolder)
-        
+   
     gen_pcl(tmpfolder)
 
     # proc time 0.125
