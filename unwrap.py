@@ -65,12 +65,12 @@ def unwrap_picture(folder):
 def newwandDepth(folder, basecount):
     "calculate depth"
     basefile = DB_HEIGHT
-    #basefile = '/home/samir/Desktop/blender/pycode/bldev2/scans/30wand/cal50lf/DDbase.npy'
-    DBase = np.load(basefile)
-    print("DBase shape", DBase.shape)
+    #basefile = '/home/samir/Desktop/blender/pycode/bldev2/scans/30wand/cal50lf/Dheight_db.npy'
+    height_db = np.load(basefile)
+    print("height_db shape", height_db.shape)
     unwrap = np.load(folder / 'unwrap.npy' )
     mask = np.load(folder / 'mask.npy' )
-    # print('DBase:', np.amax(DBase), np.amin(DBase))
+    # print('height_db:', np.amax(height_db), np.amin(height_db))
     # print('unwrap:', np.amax(unwrap), np.amin(unwrap))
     depth = np.zeros((RHEIGHT, RWIDTH), dtype=np.float64)
     zee=0
@@ -81,8 +81,8 @@ def newwandDepth(folder, basecount):
 
                 s=0
                 for s in range(0, basecount-1,1):
-                    if (unwrap[i,j]> DBase[i,j,s]):
-                        ds = (unwrap[i,j] - DBase[i,j,s])/( DBase[i,j,s]- DBase[i,j,s-1])
+                    if (unwrap[i,j]> height_db[i,j,s]):
+                        ds = (unwrap[i,j] - height_db[i,j,s])/( height_db[i,j,s]- height_db[i,j,s-1])
                         zee = s+ds*1
                         break
                     else:
@@ -90,7 +90,7 @@ def newwandDepth(folder, basecount):
                         if s==basecount:
                             print('not found!')
 
-                # print(i,j,unwrap[i,j],DBase[i,j,s])
+                # print(i,j,unwrap[i,j],height_db[i,j,s])
                 if zee == 0:
                     print('not found')
                 depth[i,j]= (zee/basecount*-20 + 35)*1
@@ -207,9 +207,9 @@ def myrun():
 
 #myrun()
 
-folder = Path(__file__).parent / 'tmp'
+myfolder = Path(__file__).parent / 'tmp'
 
-unwrap_picture(folder)
-newwandDepth(folder, 30)    # todo change to 50
+unwrap_picture(myfolder)
+newwandDepth(myfolder, 30)    # todo change to 50
            
-generate_pointcloud(folder / 'image8.png', folder / 'mask.png', folder / 'depth.npy', folder / 'pointcl-depth.ply')
+generate_pointcloud(myfolder / 'image8.png', myfolder / 'mask.png', myfolder / 'depth.npy', myfolder / 'pointcl-depth.ply')
