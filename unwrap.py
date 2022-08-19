@@ -7,10 +7,12 @@ import cv2
 from PIL import Image
 from ana_const import RHEIGHT, RWIDTH, HIGH_FREQ, LOW_FREQ, DB_HEIGHT
 
+_DEBUG = True
+
 PI = np.pi
 
 def unwrap_r(low_f_file, high_f_file, folder):
-    "Unwrap...."
+    "Unwrap low_file.npy, high_file.npy  result folder"
     filelow = folder / low_f_file
     filehigh = folder /  high_f_file
     wraplow = np.zeros((RHEIGHT, RWIDTH), dtype=np.float64)
@@ -28,20 +30,23 @@ def unwrap_r(low_f_file, high_f_file, folder):
             kdata[i, j] = round((HIGH_FREQ/LOW_FREQ * (wraplow[i, j])- wraphigh[i, j])/(2*PI))
 
     unwrapdata = np.add(wraphigh, np.multiply(2*PI,kdata) )
-    print('kdata:', np.ptp(np.multiply(1,kdata)))
-    print('unwrap:', np.ptp(unwrapdata))
+    if _DEBUG:
+        print('kdata:', np.ptp(np.multiply(1,kdata)))
+        print('unwrap:', np.ptp(unwrapdata))
     # print("I'm in unwrap_r")
-    print('kdata:', kdata[::40, ::40])
+        print('kdata:', kdata[::40, ::40])
     wr_save = folder / 'unwrap.npy'
-    print(wr_save)
+    #print(wr_save)
     np.save(wr_save, unwrapdata, allow_pickle=False)
-    print('unwrange=', np.ptp(unwrapdata), np.max(unwrapdata), np.min(unwrapdata) )
+    if _DEBUG:
+        print('unwrange=', np.ptp(unwrapdata), np.max(unwrapdata), np.min(unwrapdata) )
     k_save = folder / 'kdata.npy'
-    print(k_save)
+    #print(k_save)
     np.save(k_save, kdata, allow_pickle=False)
 
     maxval = np.amax(unwrapdata)
-    print('maxval:', maxval)
+    if _DEBUG:
+        print('maxval:', maxval)
     # im_unwrap = 255*unwrapdata/ maxval# np.max(unwrapdata)*255)
     im_unwrap = 2.5*unwrapdata# np.max(unwrapdata)*255)
     # unwrapdata/np.max(unwrapdata)*255
@@ -206,10 +211,9 @@ def myrun():
     # getplys(folder)
 
 #myrun()
-
-myfolder = Path(__file__).parent / 'tmp'
-
-unwrap_picture(myfolder)
-newwandDepth(myfolder, 30)    # todo change to 50
+if __name__=='__main__':
+    myfolder = Path(__file__).parent / 'tmp'
+    unwrap_picture(myfolder)
+    #newwandDepth(myfolder, 30)    # todo change to 50
            
-generate_pointcloud(myfolder / 'image8.png', myfolder / 'mask.png', myfolder / 'depth.npy', myfolder / 'pointcl-depth.ply')
+    #generate_pointcloud(myfolder / 'image8.png', myfolder / 'mask.png', myfolder / 'depth.npy', myfolder / 'pointcl-depth.ply')
