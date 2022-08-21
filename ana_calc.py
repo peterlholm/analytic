@@ -51,11 +51,12 @@ if __name__=='__main__':
     # copy_input(testfolder, tmpfolder)
     # calculate_pcl(tmpfolder)
 
-    testfolder = Path(__file__).parent / "testdata" / "analytic_test" / "testtarget1"
-    tree = tmpfolder / 'testtarget'
+    #testfolder = Path(__file__).parent / "testdata" / "analytic_test" / "testtarget1"
+    testfolder = Path(__file__).parent / "testdata" / "planer" 
+    tree = tmpfolder / testfolder.name
     rmtree(tree, ignore_errors=True)
     copytree(testfolder, tree)
-    calc_folders(tree / 'render', 5)
+    calc_folders(tree / 'render', 25)
 
     # proc time 0.125
     # elap time 0.155
