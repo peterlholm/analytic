@@ -1,16 +1,18 @@
 "Analytic unwrap module"
 from pathlib import Path
-import os
+#import os
 from os import path
 import numpy as np
 import cv2
 from PIL import Image
 from ana_const import RHEIGHT, RWIDTH, HIGH_FREQ, LOW_FREQ, DB_HEIGHT
 
+_DEBUG = False
+
 PI = np.pi
 
 def unwrap_r(low_f_file, high_f_file, folder):
-    "Unwrap...."
+    "Unwrap low_file.npy, high_file.npy  result folder"
     filelow = folder / low_f_file
     filehigh = folder /  high_f_file
     wraplow = np.zeros((RHEIGHT, RWIDTH), dtype=np.float64)
@@ -28,46 +30,35 @@ def unwrap_r(low_f_file, high_f_file, folder):
             kdata[i, j] = round((HIGH_FREQ/LOW_FREQ * (wraplow[i, j])- wraphigh[i, j])/(2*PI))
 
     unwrapdata = np.add(wraphigh, np.multiply(2*PI,kdata) )
-    print('kdata:', np.ptp(np.multiply(1,kdata)))
-    print('unwrap:', np.ptp(unwrapdata))
-    # print("I'm in unwrap_r")
-    print('kdata:', kdata[::40, ::40])
+    if _DEBUG:
+        print('kdata:', np.ptp(np.multiply(1,kdata)))
+        print('unwrap:', np.ptp(unwrapdata))
+        print('kdata:', kdata[::40, ::40])
     wr_save = folder / 'unwrap.npy'
-    print(wr_save)
     np.save(wr_save, unwrapdata, allow_pickle=False)
-    print('unwrange=', np.ptp(unwrapdata), np.max(unwrapdata), np.min(unwrapdata) )
+    if _DEBUG:
+        print('unwrange=', np.ptp(unwrapdata), np.max(unwrapdata), np.min(unwrapdata) )
     k_save = folder / 'kdata.npy'
-    print(k_save)
     np.save(k_save, kdata, allow_pickle=False)
-
     maxval = np.amax(unwrapdata)
-    print('maxval:', maxval)
-    # im_unwrap = 255*unwrapdata/ maxval# np.max(unwrapdata)*255)
+    if _DEBUG:
+        print('maxval:', maxval)
     im_unwrap = 2.5*unwrapdata# np.max(unwrapdata)*255)
-    # unwrapdata/np.max(unwrapdata)*255
-    cv2.imwrite(str(folder / 'unwrap.png'), im_unwrap)
-    cv2.imwrite(str(folder / 'kdata.png'), np.multiply(1,kdata))
-
-def unw(myfolder, start, count):
-    "Unwrap folder"
-    for i in range(start, count):
-        print('start')
-
-        folder = myfolder / ('render'+ str(i))
-        print(folder)
-        # if path.exists(folder):
-        unwrap_r('scan_wrap2.npy', 'scan_wrap1.npy', folder )
+    if _DEBUG:
+        cv2.imwrite(str(folder / 'unwrap.png'), im_unwrap)
+        cv2.imwrite(str(folder / 'kdata.png'), np.multiply(1,kdata))
 
 def unwrap_picture(folder):
-        unwrap_r('scan_wrap2.npy', 'scan_wrap1.npy', folder )
+    "unwrap a single file"
+    unwrap_r('scan_wrap2.npy', 'scan_wrap1.npy', folder )
 
 
-def newwandDepth(folder, basecount):
+def newwand_depth(folder, basecount):
     "calculate depth"
     basefile = DB_HEIGHT
-    #basefile = '/home/samir/Desktop/blender/pycode/bldev2/scans/30wand/cal50lf/Dheight_db.npy'
     height_db = np.load(basefile)
-    print("height_db shape", height_db.shape)
+    if _DEBUG:
+        print("height_db shape", height_db.shape)
     unwrap = np.load(folder / 'unwrap.npy' )
     mask = np.load(folder / 'mask.npy' )
     # print('height_db:', np.amax(height_db), np.amin(height_db))
@@ -89,24 +80,18 @@ def newwandDepth(folder, basecount):
                         s+=1
                         if s==basecount:
                             print('not found!')
-
                 # print(i,j,unwrap[i,j],height_db[i,j,s])
                 if zee == 0:
                     print('not found')
                 depth[i,j]= (zee/basecount*-20 + 35)*1
-
     # print('depth:', np.amax(depth), np.amin(depth))
-    print('nndepthrange=', np.ptp(depth), np.max(depth), np.min(depth) )
-
+    if _DEBUG:
+        print('nndepthrange=', np.ptp(depth), np.max(depth), np.min(depth) )
     im_depth = depth# np.max(unwrapdata)*255)
     cv2.imwrite(str(folder / 'depth.png'), im_depth)
     np.save(folder / 'depth.npy' ,im_depth , allow_pickle=False)
 
-
-
-
 def generate_pointcloud(rgb_file, mask_file,depth_file,ply_file):
-    print(ply_file)
     """
     Generate a colored point cloud in PLY format from a color and a depth image.
 
@@ -116,20 +101,11 @@ def generate_pointcloud(rgb_file, mask_file,depth_file,ply_file):
     ply_file -- filename of ply file
 
     """
+    if _DEBUG:
+        print(ply_file)
     rgb = Image.open(rgb_file)
-    # depth = Image.open(depth_file)
-    # depth = Image.open(depth_file).convert('I')
     depth = np.load(depth_file )
     mask = Image.open(mask_file).convert('I')
-
-    # if rgb.size != depth.size:
-    #     raise Exception("Color and depth image do not have  same resolution.")
-    # if rgb.mode != "RGB":
-    #     raise Exception("Color image is not in RGB format")
-    # if depth.mode != "I":
-    #     raise Exception("Depth image is not in intensity format")
-
-
     points = []
     for v in range(rgb.size[1]):
         for u in range(rgb.size[0]):
@@ -138,7 +114,7 @@ def generate_pointcloud(rgb_file, mask_file,depth_file,ply_file):
             # if Z==0: continue
             # X = (u - centerX) * Z / focalLength
             # Y = (v - centerY) * Z / focalLength
-            if (mask.getpixel((v,u))<25):
+            if mask.getpixel((v,u))<25:
                 # Z = depth.getpixel((u, v))
                 Z = depth[u,v]
                 if Z < 0:
@@ -146,14 +122,16 @@ def generate_pointcloud(rgb_file, mask_file,depth_file,ply_file):
                 else:
                     if Z> 80:
                         Z = 80
-                if Z == 0: continue
+                if Z == 0:
+                    continue
                 Y = .306 * (v-80) *  Z/80 #.306 = tan(FOV/2) = tan(34/2)
                 X = .306 * (u-80) *  Z/80
-                if (u==80 and v ==80):
-                    print('80:z=', Z, X, Y)
-                else:
-                    if (u==102 and v ==82):
-                        print('82:z=', Z, X, Y)
+                if _DEBUG:
+                    if (u==80 and v ==80):
+                        print('80:z=', Z, X, Y)
+                    else:
+                        if (u==102 and v ==82):
+                            print('82:z=', Z, X, Y)
                 points.append("%f %f %f %d %d %d 0\n"%(X,Y,Z,color[0],color[1],color[2]))
     file = open(ply_file,"w")
     file.write('''ply
@@ -171,45 +149,13 @@ end_header
 '''%(len(points),"".join(points)))
     file.close()
 
+def unwrapping(folder):
+    "run through unwrapping process"
+    unwrap_picture(folder)
+    newwand_depth(folder, 50)
+    generate_pointcloud(folder / 'image8.png', folder / 'mask.png', folder / 'depth.npy', folder / 'pointcl-depth.ply')
 
-def wanddepth(myfolder,start, count, basecount):
-    for i in range(start, start+count):
-        print('new_progress:', str(i))
-        folder = myfolder+'/render'+ str(i)+'/'
-        newwandDepth(folder, basecount)
-        # makeDepth(folder, basecount)
-
-def makeclouds(myfolder,start, count):
-    for i in range(start, start+count):
-        print('start')
-        folder = myfolder+'/render'+ str(i)+'/'
-        print(folder)
-        if path.exists(folder):
-            print('i=', i)
-
-            generate_pointcloud(folder + 'image8.png', folder + 'mask.png', folder + 'depth.npy', folder +'pointcl-depth.ply')
-
-
-
-def myrun():
-    #folder = '/home/samir/Desktop/blender/pycode/bldev2/scans/30wand/lf'
-    folder = Path(__file__).parent / 'tmp'
-    # folder = '/home/samir/Desktop/blender/pycode/bldev2/calplanesL100/'
-    count= len(os.listdir(folder))-1
-    # count=50
-    # print(count)
-    start = 0
-    unw(folder,start, start+count)
-    wanddepth(folder,start, count, 50)
-    makeclouds(folder,start, count)
-
-    # getplys(folder)
-
-#myrun()
-
-myfolder = Path(__file__).parent / 'tmp'
-
-unwrap_picture(myfolder)
-newwandDepth(myfolder, 30)    # todo change to 50
-           
-generate_pointcloud(myfolder / 'image8.png', myfolder / 'mask.png', myfolder / 'depth.npy', myfolder / 'pointcl-depth.ply')
+if __name__=='__main__':
+    myfolder = Path(__file__).parent / 'tmp'
+    unwrapping(myfolder)
+ 
